@@ -28,14 +28,7 @@ class IntegrationTestKernel extends BaseKernel
             'handle_all_throwables' => true,
             'php_errors' => [
                 'log' => true,
-            ],
-            'uid' => [
-                'time_based_uuid_version' => 7,
-                'default_uuid_version' => 7,
-            ],
-            'validation' => [
-                'email_validation_mode' => 'html5',
-            ],
+            ]
         ]);
     }
 
