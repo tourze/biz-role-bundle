@@ -239,11 +239,18 @@ final class RoleEntityPermissionRepositoryTest extends AbstractRepositoryTestCas
             ->getResult()
         ;
 
+        self::assertIsArray($withRemark);
+        self::assertIsArray($withoutRemark);
+        self::assertIsArray($withoutCreatedBy);
         $this->assertCount(1, $withRemark);
         $this->assertCount(1, $withoutRemark);
         $this->assertCount(1, $withoutCreatedBy);
-        $this->assertEquals('有备注的权限', $withRemark[0]->getRemark());
-        $this->assertNull($withoutRemark[0]->getRemark());
+        /** @var RoleEntityPermission $firstWithRemark */
+        $firstWithRemark = $withRemark[0];
+        $this->assertEquals('有备注的权限', $firstWithRemark->getRemark());
+        /** @var RoleEntityPermission $firstWithoutRemark */
+        $firstWithoutRemark = $withoutRemark[0];
+        $this->assertNull($firstWithoutRemark->getRemark());
     }
 
     public function testFindOneBySorting(): void
@@ -548,10 +555,16 @@ final class RoleEntityPermissionRepositoryTest extends AbstractRepositoryTestCas
             ->getResult()
         ;
 
+        self::assertIsArray($nullRemarks);
+        self::assertIsArray($nonNullRemarks);
         $this->assertCount(1, $nullRemarks);
         $this->assertCount(1, $nonNullRemarks);
-        $this->assertNull($nullRemarks[0]->getRemark());
-        $this->assertEquals('这是一个备注', $nonNullRemarks[0]->getRemark());
+        /** @var RoleEntityPermission $firstNullRemark */
+        $firstNullRemark = $nullRemarks[0];
+        $this->assertNull($firstNullRemark->getRemark());
+        /** @var RoleEntityPermission $firstNonNullRemark */
+        $firstNonNullRemark = $nonNullRemarks[0];
+        $this->assertEquals('这是一个备注', $firstNonNullRemark->getRemark());
     }
 
     public function testFindByNullableCreatedByField(): void
@@ -597,10 +610,16 @@ final class RoleEntityPermissionRepositoryTest extends AbstractRepositoryTestCas
             ->getResult()
         ;
 
+        self::assertIsArray($nullCreatedBy);
+        self::assertIsArray($nonNullCreatedBy);
         $this->assertCount(1, $nullCreatedBy);
         $this->assertCount(1, $nonNullCreatedBy);
-        $this->assertNull($nullCreatedBy[0]->getCreatedBy());
-        $this->assertEquals('admin_user', $nonNullCreatedBy[0]->getCreatedBy());
+        /** @var RoleEntityPermission $firstNullCreatedBy */
+        $firstNullCreatedBy = $nullCreatedBy[0];
+        $this->assertNull($firstNullCreatedBy->getCreatedBy());
+        /** @var RoleEntityPermission $firstNonNullCreatedBy */
+        $firstNonNullCreatedBy = $nonNullCreatedBy[0];
+        $this->assertEquals('admin_user', $firstNonNullCreatedBy->getCreatedBy());
     }
 
     public function testFindOneByWithOrderByLogic(): void
@@ -873,6 +892,9 @@ final class RoleEntityPermissionRepositoryTest extends AbstractRepositoryTestCas
             ->getResult()
         ;
 
+        assert(is_array($nullRemarkResults));
+        assert(is_array($notNullRemarkResults));
+        assert(is_array($nullCreatedByResults));
         $this->assertCount(1, $nullRemarkResults);
         $this->assertCount(1, $notNullRemarkResults);
         $this->assertCount(1, $nullCreatedByResults);

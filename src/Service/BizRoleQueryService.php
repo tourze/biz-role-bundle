@@ -26,10 +26,11 @@ final class BizRoleQueryService
     }
 
     /**
-     * @return BizRole[]
+     * @return array<BizRole>
      */
     public function searchRoles(string $query): array
     {
+        /** @var array<BizRole> $result */
         $result = $this->bizRoleRepository->createQueryBuilder('r')
             ->where('r.title LIKE :query OR r.name LIKE :query')
             ->andWhere('r.valid = true')
@@ -38,7 +39,7 @@ final class BizRoleQueryService
             ->getResult()
         ;
 
-        return $result ?? [];
+        return $result;
     }
 
     /**

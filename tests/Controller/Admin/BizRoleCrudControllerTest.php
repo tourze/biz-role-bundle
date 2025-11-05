@@ -198,7 +198,6 @@ final class BizRoleCrudControllerTest extends AbstractEasyAdminControllerTestCas
         yield '角色标题字段' => ['角色标题'];
         yield '系统管理员字段' => ['系统管理员'];
         yield '有效状态字段' => ['有效状态'];
-        yield '用户数量字段' => ['用户数量'];
     }
 
     /**

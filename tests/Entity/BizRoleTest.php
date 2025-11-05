@@ -104,6 +104,7 @@ final class BizRoleTest extends AbstractEntityTestCase
 
         // 检查权限是否已添加
         $permissions = $this->getObjectProperty($this->role, 'dataPermissions');
+        self::assertInstanceOf(\Doctrine\Common\Collections\Collection::class, $permissions);
         $this->assertCount(1, $permissions);
         $this->assertSame($permission, $permissions->first());
 
@@ -123,6 +124,7 @@ final class BizRoleTest extends AbstractEntityTestCase
 
         // 检查权限是否已添加
         $permissions = $this->getObjectProperty($this->role, 'dataPermissions');
+        self::assertInstanceOf(\Doctrine\Common\Collections\Collection::class, $permissions);
         $this->assertCount(1, $permissions);
 
         // 移除权限
@@ -130,6 +132,7 @@ final class BizRoleTest extends AbstractEntityTestCase
 
         // 检查权限是否已移除
         $permissions = $this->getObjectProperty($this->role, 'dataPermissions');
+        self::assertInstanceOf(\Doctrine\Common\Collections\Collection::class, $permissions);
         $this->assertCount(0, $permissions);
 
         // 检查双向关系是否解除

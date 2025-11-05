@@ -35,7 +35,7 @@
     "tourze/easy-admin-menu-bundle": "1.0.*",
     "tourze/rbac-core": "1.0.*",
     "tourze/symfony-dependency-service-loader": "1.0.*",
-    "tourze/user-attribute-bundle": "0.0.*",
+    "tourze/user-attribute-bundle": "1.0.*",
     "tourze/user-service-contracts": "1.*"
   },
   "require-dev": {

@@ -74,13 +74,6 @@ final class BizRoleCrudController extends AbstractCrudController
             ->renderAsSwitch(false)
         ;
 
-        if (Crud::PAGE_DETAIL === $pageName || Crud::PAGE_INDEX === $pageName) {
-            yield IntegerField::new('users.count', '用户数量')
-                ->formatValue(function ($value, BizRole $entity) {
-                    return $entity->getUsers()->count();
-                })
-            ;
-        }
 
         yield ArrayField::new('permissions', '权限列表')
             ->hideOnIndex()
