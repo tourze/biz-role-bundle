@@ -892,15 +892,21 @@ final class RoleEntityPermissionRepositoryTest extends AbstractRepositoryTestCas
             ->getResult()
         ;
 
-        assert(is_array($nullRemarkResults));
-        assert(is_array($notNullRemarkResults));
-        assert(is_array($nullCreatedByResults));
+        self::assertIsArray($nullRemarkResults);
+        self::assertIsArray($notNullRemarkResults);
+        self::assertIsArray($nullCreatedByResults);
         $this->assertCount(1, $nullRemarkResults);
         $this->assertCount(1, $notNullRemarkResults);
         $this->assertCount(1, $nullCreatedByResults);
-        $this->assertNull($nullRemarkResults[0]->getRemark());
-        $this->assertEquals('有备注内容', $notNullRemarkResults[0]->getRemark());
-        $this->assertNull($nullCreatedByResults[0]->getCreatedBy());
+        /** @var RoleEntityPermission $firstNullRemarkResult */
+        $firstNullRemarkResult = $nullRemarkResults[0];
+        $this->assertNull($firstNullRemarkResult->getRemark());
+        /** @var RoleEntityPermission $firstNotNullRemarkResult */
+        $firstNotNullRemarkResult = $notNullRemarkResults[0];
+        $this->assertEquals('有备注内容', $firstNotNullRemarkResult->getRemark());
+        /** @var RoleEntityPermission $firstNullCreatedByResult */
+        $firstNullCreatedByResult = $nullCreatedByResults[0];
+        $this->assertNull($firstNullCreatedByResult->getCreatedBy());
     }
 
     /**

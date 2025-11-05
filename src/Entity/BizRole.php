@@ -68,7 +68,7 @@ class BizRole implements \Stringable, PlainArrayInterface, AdminArrayInterface, 
      * @var Collection<int, UserInterface>
      */
     #[Ignore]
-    #[ORM\ManyToMany(targetEntity: UserInterface::class, mappedBy: 'assignRoles', fetch: 'EXTRA_LAZY')]
+    #[ORM\ManyToMany(targetEntity: UserInterface::class, fetch: 'EXTRA_LAZY')]
     private Collection $users;
 
     #[TrackColumn]
