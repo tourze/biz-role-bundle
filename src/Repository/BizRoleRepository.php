@@ -18,7 +18,7 @@ use Tourze\RBAC\Core\Service\RoleLoaderInterface;
  */
 #[AsAlias(id: RoleLoaderInterface::class)]
 #[AsRepository(entityClass: BizRole::class)]
-class BizRoleRepository extends ServiceEntityRepository implements RoleLoaderInterface
+final class BizRoleRepository extends ServiceEntityRepository implements RoleLoaderInterface
 {
     public function __construct(ManagerRegistry $registry)
     {

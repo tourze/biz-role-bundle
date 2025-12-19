@@ -4,292 +4,236 @@ declare(strict_types=1);
 
 namespace Tourze\BizRoleBundle\Tests\Service;
 
-use Doctrine\ORM\Query;
-use Doctrine\ORM\QueryBuilder;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
 use Tourze\BizRoleBundle\Entity\BizRole;
-use Tourze\BizRoleBundle\Repository\BizRoleRepository;
 use Tourze\BizRoleBundle\Service\BizRoleQueryService;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractIntegrationTestCase;
 
 /**
  * @internal
  */
 #[CoversClass(BizRoleQueryService::class)]
-final class BizRoleQueryServiceTest extends TestCase
+#[RunTestsInSeparateProcesses]
+final class BizRoleQueryServiceTest extends AbstractIntegrationTestCase
 {
-    private BizRoleQueryService $bizRoleQueryService;
+    private BizRoleQueryService $service;
 
-    private BizRoleRepository&MockObject $bizRoleRepository;
-
-    protected function setUp(): void
+    protected function onSetUp(): void
     {
-        $this->bizRoleRepository = $this->createMock(BizRoleRepository::class);
-        $this->bizRoleQueryService = new BizRoleQueryService($this->bizRoleRepository);
+        $this->service = self::getService(BizRoleQueryService::class);
     }
 
     public function testGetValidRoles(): void
     {
-        // 创建测试数据
+        // 创建有效角色
         $role1 = new BizRole();
-        $role1->setName('admin');
+        $role1->setName('admin_' . uniqid());
         $role1->setTitle('管理员');
         $role1->setValid(true);
 
         $role2 = new BizRole();
-        $role2->setName('user');
+        $role2->setName('user_' . uniqid());
         $role2->setTitle('普通用户');
         $role2->setValid(true);
 
-        $expectedRoles = [$role1, $role2];
+        // 创建无效角色
+        $role3 = new BizRole();
+        $role3->setName('disabled_' . uniqid());
+        $role3->setTitle('已禁用角色');
+        $role3->setValid(false);
 
-        // 配置 mock
-        $this->bizRoleRepository
-            ->expects($this->once())
-            ->method('loadValidRoles')
-            ->willReturn($expectedRoles)
-        ;
+        // 持久化到数据库
+        self::getEntityManager()->persist($role1);
+        self::getEntityManager()->persist($role2);
+        self::getEntityManager()->persist($role3);
+        self::getEntityManager()->flush();
 
         // 执行测试
-        $result = $this->bizRoleQueryService->getValidRoles();
+        $result = $this->service->getValidRoles();
 
-        // 验证结果
-        $this->assertEquals($expectedRoles, $result);
-        $this->assertCount(2, $result);
+        // 验证结果 - 只返回有效角色
+        $this->assertIsArray($result);
         $this->assertContainsOnlyInstancesOf(BizRole::class, $result);
+
+        // 验证包含我们创建的有效角色
+        $validRoleIds = array_map(fn (BizRole $role) => $role->getId(), $result);
+        $this->assertContains($role1->getId(), $validRoleIds);
+        $this->assertContains($role2->getId(), $validRoleIds);
+        $this->assertNotContains($role3->getId(), $validRoleIds);
     }
 
     public function testSearchRoles(): void
     {
-        // 创建测试数据
+        // 创建测试角色
         $role1 = new BizRole();
-        $role1->setName('admin');
+        $role1->setName('admin_search_' . uniqid());
         $role1->setTitle('系统管理员');
         $role1->setValid(true);
 
-        $expectedRoles = [$role1];
-        $searchQuery = '管理员';
+        $role2 = new BizRole();
+        $role2->setName('user_search_' . uniqid());
+        $role2->setTitle('普通用户');
+        $role2->setValid(true);
 
-        // 创建 QueryBuilder mock
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $query = $this->createMock(Query::class);
+        $role3 = new BizRole();
+        $role3->setName('operator_search_' . uniqid());
+        $role3->setTitle('操作员');
+        $role3->setValid(true);
 
-        // 配置 QueryBuilder chain
-        $queryBuilder->expects($this->once())
-            ->method('where')
-            ->with('r.title LIKE :query OR r.name LIKE :query')
-            ->willReturnSelf()
-        ;
+        // 持久化
+        self::getEntityManager()->persist($role1);
+        self::getEntityManager()->persist($role2);
+        self::getEntityManager()->persist($role3);
+        self::getEntityManager()->flush();
 
-        $queryBuilder->expects($this->once())
-            ->method('andWhere')
-            ->with('r.valid = true')
-            ->willReturnSelf()
-        ;
-
-        $queryBuilder->expects($this->once())
-            ->method('setParameter')
-            ->with('query', '%管理员%')
-            ->willReturnSelf()
-        ;
-
-        $queryBuilder->expects($this->once())
-            ->method('getQuery')
-            ->willReturn($query)
-        ;
-
-        $query->expects($this->once())
-            ->method('getResult')
-            ->willReturn($expectedRoles)
-        ;
-
-        // 配置 Repository mock
-        $this->bizRoleRepository
-            ->expects($this->once())
-            ->method('createQueryBuilder')
-            ->with('r')
-            ->willReturn($queryBuilder)
-        ;
-
-        // 执行测试
-        $result = $this->bizRoleQueryService->searchRoles($searchQuery);
+        // 执行搜索 - 搜索"管理员"
+        $result = $this->service->searchRoles('管理员');
 
         // 验证结果
-        $this->assertEquals($expectedRoles, $result);
-        $this->assertCount(1, $result);
+        $this->assertIsArray($result);
         $this->assertContainsOnlyInstancesOf(BizRole::class, $result);
+
+        // 验证包含匹配的角色
+        $foundRole1 = false;
+        foreach ($result as $role) {
+            if ($role->getId() === $role1->getId()) {
+                $foundRole1 = true;
+                break;
+            }
+        }
+        $this->assertTrue($foundRole1, '应该找到"系统管理员"角色');
+
+        // 搜索 name 字段
+        $result2 = $this->service->searchRoles('admin_search');
+        $this->assertIsArray($result2);
+
+        $foundByName = false;
+        foreach ($result2 as $role) {
+            if ($role->getId() === $role1->getId()) {
+                $foundByName = true;
+                break;
+            }
+        }
+        $this->assertTrue($foundByName, '应该能通过name字段搜索到角色');
     }
 
     public function testSearchRolesWithEmptyQuery(): void
     {
-        // 测试空查询字符串
-        $expectedRoles = [];
-        $searchQuery = '';
+        // 创建测试角色
+        $role1 = new BizRole();
+        $role1->setName('empty_query_test_' . uniqid());
+        $role1->setTitle('空查询测试角色');
+        $role1->setValid(true);
 
-        // 创建 QueryBuilder mock
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $query = $this->createMock(Query::class);
+        self::getEntityManager()->persist($role1);
+        self::getEntityManager()->flush();
 
-        // 配置 QueryBuilder chain
-        $queryBuilder->expects($this->once())
-            ->method('where')
-            ->with('r.title LIKE :query OR r.name LIKE :query')
-            ->willReturnSelf()
-        ;
+        // 执行空查询
+        $result = $this->service->searchRoles('');
 
-        $queryBuilder->expects($this->once())
-            ->method('andWhere')
-            ->with('r.valid = true')
-            ->willReturnSelf()
-        ;
-
-        $queryBuilder->expects($this->once())
-            ->method('setParameter')
-            ->with('query', '%%')
-            ->willReturnSelf()
-        ;
-
-        $queryBuilder->expects($this->once())
-            ->method('getQuery')
-            ->willReturn($query)
-        ;
-
-        $query->expects($this->once())
-            ->method('getResult')
-            ->willReturn($expectedRoles)
-        ;
-
-        // 配置 Repository mock
-        $this->bizRoleRepository
-            ->expects($this->once())
-            ->method('createQueryBuilder')
-            ->with('r')
-            ->willReturn($queryBuilder)
-        ;
-
-        // 执行测试
-        $result = $this->bizRoleQueryService->searchRoles($searchQuery);
-
-        // 验证结果
-        $this->assertEquals($expectedRoles, $result);
+        // 验证结果 - 空查询应该返回所有有效角色
         $this->assertIsArray($result);
+
+        // 验证至少包含我们创建的角色
+        $roleIds = array_map(fn (BizRole $role) => $role->getId(), $result);
+        $this->assertContains($role1->getId(), $roleIds);
     }
 
     public function testFormatRolesForAutocomplete(): void
     {
-        // 创建测试数据
+        // 创建测试角色
         $role1 = new BizRole();
-        $role1->setName('admin');
+        $role1->setName('admin_format_' . uniqid());
         $role1->setTitle('系统管理员');
-        // 模拟 ID 设置（通常由 Doctrine 设置）
-        $reflection = new \ReflectionClass($role1);
-        $idProperty = $reflection->getProperty('id');
-        $idProperty->setAccessible(true);
-        $idProperty->setValue($role1, 1);
+        $role1->setValid(true);
 
         $role2 = new BizRole();
-        $role2->setName('user');
+        $role2->setName('user_format_' . uniqid());
         $role2->setTitle('普通用户');
-        $reflection = new \ReflectionClass($role2);
-        $idProperty = $reflection->getProperty('id');
-        $idProperty->setAccessible(true);
-        $idProperty->setValue($role2, 2);
+        $role2->setValid(true);
 
+        // 持久化
+        self::getEntityManager()->persist($role1);
+        self::getEntityManager()->persist($role2);
+        self::getEntityManager()->flush();
+
+        // 刷新实体以确保ID已设置
+        self::getEntityManager()->refresh($role1);
+        self::getEntityManager()->refresh($role2);
+
+        // 执行格式化
         $roles = [$role1, $role2];
+        $result = $this->service->formatRolesForAutocomplete($roles);
 
-        // 预期结果
-        $expectedResult = [
-            [
-                'id' => 1,
-                'text' => '系统管理员 (admin)',
-            ],
-            [
-                'id' => 2,
-                'text' => '普通用户 (user)',
-            ],
-        ];
-
-        // 执行测试
-        $result = $this->bizRoleQueryService->formatRolesForAutocomplete($roles);
-
-        // 验证结果
-        $this->assertEquals($expectedResult, $result);
+        // 验证结果结构
+        $this->assertIsArray($result);
         $this->assertCount(2, $result);
 
-        // 验证每个元素的结构
+        // 验证第一个角色的格式
+        $this->assertArrayHasKey('id', $result[0]);
+        $this->assertArrayHasKey('text', $result[0]);
+        $this->assertEquals($role1->getId(), $result[0]['id']);
+        $this->assertEquals('系统管理员 (admin_format_' . substr($role1->getName(), -13) . ')', $result[0]['text']);
+
+        // 验证第二个角色的格式
+        $this->assertArrayHasKey('id', $result[1]);
+        $this->assertArrayHasKey('text', $result[1]);
+        $this->assertEquals($role2->getId(), $result[1]['id']);
+        $this->assertStringContainsString('普通用户', $result[1]['text']);
+
+        // 验证所有元素的数据类型
         foreach ($result as $item) {
-            $this->assertArrayHasKey('id', $item);
-            $this->assertArrayHasKey('text', $item);
             $this->assertIsInt($item['id']);
             $this->assertIsString($item['text']);
+            $this->assertGreaterThan(0, $item['id']);
         }
     }
 
     public function testFormatRolesForAutocompleteWithEmptyArray(): void
     {
         // 测试空数组
-        $roles = [];
-        $expectedResult = [];
-
-        // 执行测试
-        $result = $this->bizRoleQueryService->formatRolesForAutocomplete($roles);
+        $result = $this->service->formatRolesForAutocomplete([]);
 
         // 验证结果
-        $this->assertEquals($expectedResult, $result);
         $this->assertIsArray($result);
         $this->assertEmpty($result);
     }
 
-    public function testFormatRolesForAutocompleteWithDefaultId(): void
+    public function testFindOrCreate(): void
     {
-        // 测试新实体（ID 为默认值 0）
-        $role = new BizRole();
-        $role->setName('new-role');
-        $role->setTitle('新角色');
-        // ID 默认为 0
+        $uniqueName = 'test_role_' . uniqid();
+        $title = '测试角色';
 
-        $roles = [$role];
-        $expectedResult = [
-            [
-                'id' => 0,
-                'text' => '新角色 (new-role)',
-            ],
-        ];
+        // 第一次调用 - 应该创建新角色
+        $role1 = $this->service->findOrCreate($uniqueName, $title);
 
-        // 执行测试
-        $result = $this->bizRoleQueryService->formatRolesForAutocomplete($roles);
+        $this->assertInstanceOf(BizRole::class, $role1);
+        $this->assertEquals($uniqueName, $role1->getName());
+        $this->assertEquals($title, $role1->getTitle());
+        $this->assertTrue($role1->isValid());
+        $this->assertGreaterThan(0, $role1->getId());
 
-        // 验证结果
-        $this->assertEquals($expectedResult, $result);
-        $this->assertCount(1, $result);
-        $this->assertEquals(0, $result[0]['id']);
-        $this->assertEquals('新角色 (new-role)', $result[0]['text']);
+        // 第二次调用 - 应该返回已存在的角色
+        $role2 = $this->service->findOrCreate($uniqueName, $title);
+
+        $this->assertInstanceOf(BizRole::class, $role2);
+        $this->assertEquals($role1->getId(), $role2->getId());
+        $this->assertEquals($uniqueName, $role2->getName());
+        $this->assertEquals($title, $role2->getTitle());
     }
 
-    public function testConstructorDependencyInjection(): void
+    public function testFindOrCreateWithoutTitle(): void
     {
-        // 验证构造函数正确注入了依赖
-        $this->assertInstanceOf(BizRoleQueryService::class, $this->bizRoleQueryService);
-    }
+        $uniqueName = 'test_role_no_title_' . uniqid();
 
-    public function testServiceMethodsReturnTypes(): void
-    {
-        // 测试方法返回类型
+        // 不提供 title，应该使用 name 作为 title
+        $role = $this->service->findOrCreate($uniqueName);
 
-        // getValidRoles 应该返回数组
-        $this->bizRoleRepository
-            ->expects($this->once())
-            ->method('loadValidRoles')
-            ->willReturn([])
-        ;
-
-        $result = $this->bizRoleQueryService->getValidRoles();
-        $this->assertIsArray($result);
-
-        // formatRolesForAutocomplete 应该返回特定格式的数组
-        $result = $this->bizRoleQueryService->formatRolesForAutocomplete([]);
-        $this->assertIsArray($result);
+        $this->assertInstanceOf(BizRole::class, $role);
+        $this->assertEquals($uniqueName, $role->getName());
+        $this->assertEquals($uniqueName, $role->getTitle());
+        $this->assertTrue($role->isValid());
+        $this->assertGreaterThan(0, $role->getId());
     }
 }

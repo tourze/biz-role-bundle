@@ -26,6 +26,14 @@ final class BizRoleQueryService
     }
 
     /**
+     * 查找或创建角色
+     */
+    public function findOrCreate(string $name, ?string $title = null): BizRole
+    {
+        return $this->bizRoleRepository->findOrCreate($name, $title);
+    }
+
+    /**
      * @return array<BizRole>
      */
     public function searchRoles(string $query): array

@@ -3,6 +3,7 @@ services:
   _defaults:
     autowire: true      # Automatically injects dependencies in your services.
     autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+    public: false
 
   Tourze\BizRoleBundle\Controller\:
     resource: '../../Controller/'
@@ -10,6 +11,4 @@ services:
     resource: '../../Repository/'
   Tourze\BizRoleBundle\Service\:
     resource: '../../Service/'
-  Tourze\BizRoleBundle\DependencyInjection\BizRoleExtension:
-    autowire: true
     public: true

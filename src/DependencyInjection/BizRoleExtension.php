@@ -6,7 +6,7 @@ namespace Tourze\BizRoleBundle\DependencyInjection;
 
 use Tourze\SymfonyDependencyServiceLoader\AutoExtension;
 
-class BizRoleExtension extends AutoExtension
+final class BizRoleExtension extends AutoExtension
 {
     protected function getConfigDir(): string
     {
